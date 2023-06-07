@@ -12,16 +12,19 @@ public class GamePanel extends JPanel implements ActionListener {
     private Image pacman, ghost, coin;
     private int pacmanPosX, pacmanDesiredX, pacmanDesiredY, pacmanPosY, mapHeight, mapWidth;
     private int pacmanSpeed, ghostSpeed;
+    private int score;
 
     private int [] ghostPosX;
     private int [] ghostPosY;
 
     public final static int SIZE = 20;
     public final static int GHOSTS = 3;
+    String scoreDescription;
 
     List<String[]> boardData;
-    private final Font smallFont = new Font("sans-serif", Font.BOLD, 14);
+    private final Font customFont = new Font("sans-serif", Font.BOLD, 14);
     GamePanel() {
+        score = 0;
         ghostPosX = new int[GHOSTS];
         ghostPosY = new int[GHOSTS];
         InitializeMap();
@@ -64,6 +67,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setColor(Color.black);
         g2d.fillRect(0,0, getWidth(), getHeight());
         drawBoard(g2d);
+        drawScore(g2d);
         play(g2d);
 
         Toolkit.getDefaultToolkit();
@@ -148,6 +152,11 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
     }
+    private void drawScore(Graphics2D g2d) {
+        scoreDescription = ("WYNIK: " + score);
+        g2d.setColor(Color.white);
+        g2d.drawString(scoreDescription, 15, 420);
+    }
     private void play(Graphics2D g2d) {
         movePacman();
         showPacman(g2d);
@@ -167,6 +176,10 @@ public class GamePanel extends JPanel implements ActionListener {
                 case "W":
                     pacmanDesiredX = pacmanPosX;
                     pacmanDesiredY = pacmanPosY;
+                    break;
+                case "C":
+                    boardData.get(pacmanDesiredY)[pacmanDesiredX] = "";
+                    score += 10;
                     break;
                 default:
                     pacmanPosX = pacmanDesiredX;
