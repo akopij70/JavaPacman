@@ -26,6 +26,7 @@ public class GamePanel extends JPanel implements ActionListener {
     String scoreDescription;
     List<String[]> boardData;
     private final Font customFont = new Font("sans-serif", Font.BOLD, 14);
+    boolean gameOver = false;
 
     GamePanel() {
         score = 0;
@@ -44,7 +45,7 @@ public class GamePanel extends JPanel implements ActionListener {
         @Override
         public void keyPressed(KeyEvent e) {
             int key = e.getKeyCode();
-            switch (key){
+            switch (key) {
                 case KeyEvent.VK_LEFT:
                     pacmanDesiredX--;
                     System.out.println("LEWO");
@@ -60,6 +61,9 @@ public class GamePanel extends JPanel implements ActionListener {
                 case KeyEvent.VK_DOWN:
                     pacmanDesiredY++;
                     System.out.println("DOL");
+                    break;
+                case KeyEvent.VK_R:
+                    if(gameOver) resetGame();
                     break;
             }
         }
@@ -167,9 +171,19 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void play(Graphics2D g2d) {
-        movePacman();
+
+        for (int i = 0; i < ghostPosX.length; i++) {
+            if (Math.abs(pacmanPosX - ghostPosX[i]) == 0 && Math.abs(pacmanPosY - ghostPosY[i]) == 0) {
+                GameOver();
+            }
+        }
+        if (!gameOver) movePacman();
+        else drawEnd(g2d);
+
         showPacman(g2d);
         showGhosts(g2d);
+
+
     }
 
     private void showPacman(Graphics2D g2d) {
@@ -177,6 +191,8 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void movePacman() {
+
+
         if ((pacmanDesiredX < SIZE) && (pacmanDesiredY < SIZE)) {
             String positionChecker = boardData.get(pacmanDesiredY)[pacmanDesiredX];
             System.out.println(positionChecker);
@@ -233,6 +249,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
                 if ((chaseZone > Math.abs(distanceX)) && (chaseZone > Math.abs(distanceY))) {
                     if (Math.abs(pacmanPosX - ghostPosX[i]) == 0 && Math.abs(pacmanPosY - ghostPosY[i]) == 0) {
+                        //GameOver();
                         ghostDesiredX = pacmanPosX;
                         ghostDesiredY = pacmanPosY;
                     } else if (distanceX > 0 && (Math.abs(distanceX) > Math.abs(distanceY))) {
@@ -246,7 +263,7 @@ public class GamePanel extends JPanel implements ActionListener {
                     }
                 }
                 String positionChecker = boardData.get(ghostDesiredY)[ghostDesiredX];
-                if (Objects.equals(positionChecker, "W") || Objects.equals(positionChecker, "G") ) {
+                if (Objects.equals(positionChecker, "W") || Objects.equals(positionChecker, "G")) {
                     ghostDesiredX = ghostPosX[i];
                     ghostDesiredY = ghostPosY[i];
                 }
@@ -265,7 +282,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     public void moveGhostByNewThread() {
         new Thread(() -> {
-            while (true) {
+            while (!gameOver) {
                 moveGhosts();
                 try {
                     Thread.sleep(300);
@@ -274,6 +291,38 @@ public class GamePanel extends JPanel implements ActionListener {
                 }
             }
         }).start();
+    }
+
+    public void GameOver() {
+        gameOver = true;
+    }
+
+    private void drawEnd(Graphics2D g2d) {
+        int backgrounWidth = 250;
+        int backgroundHeight = 60;
+        int backgroundX = (mapWidth - backgrounWidth) / 2;
+        int backgroundY = (mapHeight - backgroundHeight) / 2;
+        g2d.setColor(Color.white);
+        g2d.fillRect(backgroundX, backgroundY, backgrounWidth, backgroundHeight);
+
+        scoreDescription = "Koniec Gry!";
+        g2d.setFont(customFont);
+        g2d.setColor(Color.black);
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = backgroundX + (backgrounWidth - fm.stringWidth(scoreDescription)) / 2;
+        int textY = backgroundY + (backgroundHeight - fm.getHeight()) / 2 ;
+        g2d.drawString(scoreDescription, textX, textY);
+
+        scoreDescription = " Nacisnij R aby zagrac ponownie!";
+        g2d.drawString(scoreDescription, textX - 80, textY + 20);
+    }
+
+    private void resetGame() {
+        score = 0;
+        setDefaultPositions();
+        gameOver = false;
+        moveGhostByNewThread();
+        timer.restart();
     }
 
 }
