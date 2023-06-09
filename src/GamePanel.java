@@ -1,11 +1,15 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class GamePanel extends JPanel implements ActionListener {
     private Timer timer;
@@ -14,15 +18,15 @@ public class GamePanel extends JPanel implements ActionListener {
     private int pacmanSpeed, ghostSpeed;
     private int score;
 
-    private int [] ghostPosX;
-    private int [] ghostPosY;
+    private int[] ghostPosX;
+    private int[] ghostPosY;
 
     public final static int SIZE = 20;
     public final static int GHOSTS = 3;
     String scoreDescription;
-
     List<String[]> boardData;
     private final Font customFont = new Font("sans-serif", Font.BOLD, 14);
+
     GamePanel() {
         score = 0;
         ghostPosX = new int[GHOSTS];
@@ -32,6 +36,7 @@ public class GamePanel extends JPanel implements ActionListener {
         loadImages();
         addKeyListener(new PacmanKeyAdapter());
         setFocusable(true);
+        moveGhostByNewThread();
 
     }
 
@@ -65,7 +70,7 @@ public class GamePanel extends JPanel implements ActionListener {
         Graphics2D g2d = (Graphics2D) g;
 
         g2d.setColor(Color.black);
-        g2d.fillRect(0,0, getWidth(), getHeight());
+        g2d.fillRect(0, 0, getWidth(), getHeight());
         drawBoard(g2d);
         drawScore(g2d);
         play(g2d);
@@ -98,6 +103,7 @@ public class GamePanel extends JPanel implements ActionListener {
         timer = new Timer(10, this);
         timer.start();
     }
+
     private void setDefaultPositions() {
         int ghostCounter = 0;
         for (int y = 0; y < SIZE; y++) {
@@ -124,6 +130,7 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
     }
+
     private void loadImages() {
         pacman = new ImageIcon("resources/pacman.png").getImage();
         coin = new ImageIcon("resources/coin.png").getImage();
@@ -138,29 +145,30 @@ public class GamePanel extends JPanel implements ActionListener {
                 switch (line[x]) {
                     case "W":
                         g2d.setColor(Color.BLUE);
-                        g2d.fillRect((x * (SIZE)), (y * (SIZE)), (SIZE-1), (SIZE-1));
+                        g2d.fillRect((x * (SIZE)), (y * (SIZE)), (SIZE - 1), (SIZE - 1));
                         break;
                     case "P":
                     case "G":
                         g2d.setColor(Color.black);
-                        g2d.fillRect((x * (SIZE)), (y * (SIZE)), (SIZE-1), (SIZE-1));
+                        g2d.fillRect((x * (SIZE)), (y * (SIZE)), (SIZE - 1), (SIZE - 1));
                         break;
                     case "C":
-                        g2d.drawImage(coin, (x * (SIZE)), (y * (SIZE)),(SIZE-1), (SIZE-1), this);
+                        g2d.drawImage(coin, (x * (SIZE)), (y * (SIZE)), (SIZE - 1), (SIZE - 1), this);
                         break;
                 }
             }
         }
     }
+
     private void drawScore(Graphics2D g2d) {
         scoreDescription = ("WYNIK: " + score);
         g2d.setColor(Color.white);
         g2d.drawString(scoreDescription, 15, 420);
     }
+
     private void play(Graphics2D g2d) {
         movePacman();
         showPacman(g2d);
-        moveGhosts();
         showGhosts(g2d);
     }
 
@@ -188,6 +196,7 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
     }
+
     private void showGhosts(Graphics2D g2d) {
         for (int i = 0; i < GHOSTS; i++) {
             g2d.drawImage(ghost, (ghostPosX[i] * (SIZE)), (ghostPosY[i] * (SIZE)), SIZE, SIZE, this);
@@ -195,10 +204,76 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void moveGhosts() {
+        for (int i = 0; i < ghostPosX.length; i++) {
+
+            ghostSpeed = 1;
+            int chaseZone = 5;
+            int ghostDesiredX = ghostPosX[i];
+            int ghostDesiredY = ghostPosY[i];
+            int distanceX = pacmanPosX - ghostPosX[i];
+            int distanceY = pacmanPosY - ghostPosY[i];
+
+            int randomDirection = (int) (Math.random() * 4);
+            switch (randomDirection) {
+                case 0:
+                    ghostDesiredX = ghostPosX[i] + ghostSpeed;
+                    break;
+                case 1:
+                    ghostDesiredX = ghostPosX[i] - ghostSpeed;
+                    break;
+                case 2:
+                    ghostDesiredY = ghostPosY[i] + ghostSpeed;
+                    break;
+                case 3:
+                    ghostDesiredY = ghostPosY[i] - ghostSpeed;
+                    break;
+            }
+
+            if ((ghostDesiredX < SIZE) && (ghostDesiredY < SIZE)) {
+
+                if ((chaseZone > Math.abs(distanceX)) && (chaseZone > Math.abs(distanceY))) {
+                    if (Math.abs(pacmanPosX - ghostPosX[i]) == 0 && Math.abs(pacmanPosY - ghostPosY[i]) == 0) {
+                        ghostDesiredX = pacmanPosX;
+                        ghostDesiredY = pacmanPosY;
+                    } else if (distanceX > 0 && (Math.abs(distanceX) > Math.abs(distanceY))) {
+                        ghostDesiredX = ghostPosX[i] + ghostSpeed;
+                    } else if (distanceX < 0 && (Math.abs(distanceX) > Math.abs(distanceY))) {
+                        ghostDesiredX = ghostPosX[i] - ghostSpeed;
+                    } else if (distanceY > 0) {
+                        ghostDesiredY = ghostPosY[i] + ghostSpeed;
+                    } else if (distanceY < 0) {
+                        ghostDesiredY = ghostPosY[i] - ghostSpeed;
+                    }
+                }
+                String positionChecker = boardData.get(ghostDesiredY)[ghostDesiredX];
+                if (Objects.equals(positionChecker, "W") || Objects.equals(positionChecker, "G") ) {
+                    ghostDesiredX = ghostPosX[i];
+                    ghostDesiredY = ghostPosY[i];
+                }
+                ghostPosX[i] = ghostDesiredX;
+                ghostPosY[i] = ghostDesiredY;
+                repaint();
+            }
+
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         repaint();
     }
+
+    public void moveGhostByNewThread() {
+        new Thread(() -> {
+            while (true) {
+                moveGhosts();
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
 }
