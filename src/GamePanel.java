@@ -27,7 +27,7 @@ public class GamePanel extends JPanel implements ActionListener {
     List<String[]> boardData;
     private final Font customFont = new Font("sans-serif", Font.BOLD, 14);
     boolean gameOver = false;
-
+    int maxScore = 0;
     GamePanel() {
         score = 0;
         ghostPosX = new int[GHOSTS];
@@ -129,6 +129,7 @@ public class GamePanel extends JPanel implements ActionListener {
                         break;
                     case "":
                         boardData.get(y)[x] = "C";
+                        maxScore++;
                         break;
                 }
             }
@@ -171,19 +172,24 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void play(Graphics2D g2d) {
-
         for (int i = 0; i < ghostPosX.length; i++) {
             if (Math.abs(pacmanPosX - ghostPosX[i]) == 0 && Math.abs(pacmanPosY - ghostPosY[i]) == 0) {
                 GameOver();
             }
         }
-        if (!gameOver) movePacman();
-        else drawEnd(g2d);
-
         showPacman(g2d);
         showGhosts(g2d);
-
-
+        if (!gameOver){
+            movePacman();
+        }
+        else {
+            if(score >= maxScore*10) {
+                drawVictory(g2d);
+            }else drawEnd(g2d);
+        }
+        if(score >= maxScore*10){
+            gameOver = true;
+        }
     }
 
     private void showPacman(Graphics2D g2d) {
@@ -315,6 +321,24 @@ public class GamePanel extends JPanel implements ActionListener {
 
         scoreDescription = " Nacisnij R aby zagrac ponownie!";
         g2d.drawString(scoreDescription, textX - 80, textY + 20);
+    }
+
+    private void drawVictory(Graphics2D g2d) {
+        int backgrounWidth = 200;
+        int backgroundHeight = 40;
+        int backgroundX = (mapWidth - backgrounWidth) / 2;
+        int backgroundY = (mapHeight - backgroundHeight) / 2;
+        g2d.setColor(Color.white);
+        g2d.fillRect(backgroundX, backgroundY, backgrounWidth, backgroundHeight);
+
+        scoreDescription = "Wygrana!";
+        g2d.setFont(customFont);
+        g2d.setColor(Color.black);
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = backgroundX + (backgrounWidth - fm.stringWidth(scoreDescription)) / 2;
+        int textY = backgroundY + (backgroundHeight - fm.getHeight());
+        g2d.drawString(scoreDescription, textX, textY);
+
     }
 
     private void resetGame() {
